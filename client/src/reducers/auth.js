@@ -1,6 +1,6 @@
 /* eslint-disable default-case */
 /* eslint-disable import/no-anonymous-default-export */
-import {REGISTER_FAIL, REGISTER_SUCCESS, USER_LOADED, AUTH_ERROR, LOGIN_FAIL, LOGIN_SUCCESS, LOGOUT} from '../actions/types'
+import {REGISTER_FAIL, REGISTER_SUCCESS, USER_LOADED, AUTH_ERROR, LOGIN_FAIL, LOGIN_SUCCESS, LOGOUT,ACCOUNT_DELETED} from '../actions/types'
 
 const initialState = {
     token: localStorage.getItem('token'),
@@ -33,6 +33,7 @@ export default function(state= initialState, action) {
         case AUTH_ERROR:
         case LOGIN_FAIL:
         case LOGOUT:
+        case ACCOUNT_DELETED:
             localStorage.removeItem('token')
             return {
                 ...state,

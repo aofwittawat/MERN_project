@@ -1,12 +1,15 @@
 const express = require("express");
+const axios = require('axios')
+const config = require('config')
 const router = express.Router();
 const auth = require("../../middleware/auth");
 const { check, validationResult } = require("express-validator");
 
 const Profile = require("../../models/Profile");
 const User = require("../../models/User");
+const Post = require("../../models/Post");
 
-//@route    GET api/Profile/me
+//@route    GET api/profile/me
 //@desc     Get current users profile
 //@access   Private
 router.get("/me", auth, async (req, res) => {
@@ -25,7 +28,7 @@ router.get("/me", auth, async (req, res) => {
   }
 });
 
-//@route    POST api/Profile
+//@route    POST api/profile
 //@desc     Create or update user profile
 //@access   Private
 router.post(
@@ -100,7 +103,7 @@ router.post(
   }
 );
 
-//@route    GET api/Profile
+//@route    GET api/profile
 //@desc     Get all profiles
 //@access   Public
 router.get("/", async (req, res) => {
@@ -113,7 +116,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-//@route    GET api/Profile/user/:user_id
+//@route    GET api/profile/user/:user_id
 //@desc     Get profile by user id
 //@access   Public
 router.get("/user/:user_id", async (req, res) => {
@@ -134,13 +137,13 @@ router.get("/user/:user_id", async (req, res) => {
   }
 });
 
-//@route    DELETE api/Profile
+//@route    DELETE api/profile
 //@desc     delete profile, user and posts
 //@access   private
 router.delete("/", auth, async (req, res) => {
   try {
-    //@todo - remove users posts
-
+    // Remove users posts
+    await Post.deleteMany({user: req.user.id })
     // Remove Profile
     await Profile.findOneAndRemove({ user: req.user.id });
     // Remove User
@@ -152,7 +155,7 @@ router.delete("/", auth, async (req, res) => {
   }
 });
 
-//@route    PUT api/Profile/experience
+//@route    PUT api/profile/experience
 //@desc     Add profile exp
 //@access   private
 router.put(
@@ -193,7 +196,7 @@ router.put(
   }
 );
 
-//@route    DELETE api/Profile/experience/exp_id
+//@route    DELETE api/profile/experience/exp_id
 //@desc     delete experience from profile
 //@access   private
 router.delete("/experience/:exp_id", auth, async (req, res) => {
@@ -214,66 +217,87 @@ router.delete("/experience/:exp_id", auth, async (req, res) => {
   }
 });
 
-//@route    PUT api/Profile/education
+//@route    PUT api/profile/education
 //@desc     Add profile education
 //@access   private
 router.put(
-    "/education",
+  "/education",
+  [
+    auth,
     [
-      auth,
-      [
-        check("school", "School is required").not().isEmpty(),
-        check("degree", "Degree is required").not().isEmpty(),
-        check("fieldofstudy", "Field of study is required").not().isEmpty(),
-        check("from", "From date is required").not().isEmpty(),
-      ],
+      check("school", "School is required").not().isEmpty(),
+      check("degree", "Degree is required").not().isEmpty(),
+      check("fieldofstudy", "Field of study is required").not().isEmpty(),
+      check("from", "From date is required").not().isEmpty(),
     ],
-    async (req, res) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-      const { school, degree, fieldofstudy, from, to, current, description } =
-        req.body;
-      const newEdu = {
-        school,
-        degree,
-        fieldofstudy,
-        from,
-        to,
-        current,
-        description,
-      };
-      try {
-        const profile = await Profile.findOne({ user: req.user.id });
-        profile.education.unshift(newEdu);
-        await profile.save();
-        res.json(profile);
-      } catch (err) {
-        console.log(err.message);
-        res.status(500).send("Server Error");
-      }
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
-  );
-  
-  //@route    DELETE api/Profile/education/exp_id
-  //@desc     delete education from profile
-  //@access   private
-  router.delete("/education/:edu_id", auth, async (req, res) => {
+    const { school, degree, fieldofstudy, from, to, current, description } =
+      req.body;
+    const newEdu = {
+      school,
+      degree,
+      fieldofstudy,
+      from,
+      to,
+      current,
+      description,
+    };
     try {
       const profile = await Profile.findOne({ user: req.user.id });
-  
-      // get the remove index
-      const removeIndex = profile.education
-        .map((item) => item.id)
-        .indexOf(req.params.edu_id);
-  
-      profile.education.splice(removeIndex, 1);
+      profile.education.unshift(newEdu);
       await profile.save();
       res.json(profile);
     } catch (err) {
       console.log(err.message);
       res.status(500).send("Server Error");
     }
-  });
+  }
+);
+
+//@route    DELETE api/profile/education/exp_id
+//@desc     delete education from profile
+//@access   private
+router.delete("/education/:edu_id", auth, async (req, res) => {
+  try {
+    const profile = await Profile.findOne({ user: req.user.id });
+
+    // get the remove index
+    const removeIndex = profile.education
+      .map((item) => item.id)
+      .indexOf(req.params.edu_id);
+
+    profile.education.splice(removeIndex, 1);
+    await profile.save();
+    res.json(profile);
+  } catch (err) {
+    console.log(err.message);
+    res.status(500).send("Server Error");
+  }
+});
+
+// @route    GET api/profile/github/:username
+// @desc     Get user repos from Github
+// @access   Public
+router.get('/github/:username', async (req, res) => {
+  try {
+    const uri = encodeURI(
+      `https://api.github.com/users/${req.params.username}/repos?per_page=5&sort=created:asc&client_id=${config.get('githubClientId')}&client_secret=${config.get('githubSecretId')}`
+    );
+    const headers = {
+      'user-agent': 'node.js',
+      method:'GET'
+    };
+
+    const gitHubResponse = await axios.get(uri, { headers });
+    return res.json(gitHubResponse.data);
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).send('Server Error');
+  }
+});
 module.exports = router;
