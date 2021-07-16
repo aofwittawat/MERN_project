@@ -22,7 +22,7 @@ router.get('/', auth, async (req, res) => {
 })
 
 //  @route      POST api/auth
-//  @desc       Authenticate user and get token
+//  @desc       Authenticate user and get token to login 
 //  @access     Public
 router.post('/', [
     check('email', 'Please include is a valid emial').isEmail(),
