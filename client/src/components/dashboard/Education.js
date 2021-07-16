@@ -36,7 +36,7 @@ const Education = ({ education, deleteEducation }) => {
 }
 
 Education.propTypes = {
-    Education: PropTypes.array.isRequired,
+    Education: PropTypes.array,
     deleteEducation: PropTypes.func.isRequired,
 }
 
