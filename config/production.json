@@ -1,0 +1,6 @@
+{
+    "mongoURI":"mongodb+srv://aof123:Cleoja027@devconnector.hblrq.mongodb.net/myFirstDatabase?retryWrites=true&w=majority",
+    "jwtSecret": "cleoja027",
+    "githubClientId":"b74d0f15f9b863d1d58a",
+    "githubSecretId":"4a1feead4b3447d2f5fcd0a07d511b4a78979fc4"
+}
